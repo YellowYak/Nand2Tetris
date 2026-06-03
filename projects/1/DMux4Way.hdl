@@ -13,5 +13,25 @@ CHIP DMux4Way {
     OUT a, b, c, d;
 
     PARTS:
-    //// Replace this comment with your code.
+
+    // a = in AND (Not(sel[1]) AND Not(sel[0]))
+    // b = in AND (Not(sel[1]) AND sel[0])
+    // c = in AND (sel[1] AND Not(sel[0]))
+    // d = in AND (sel[1] AND sel[0])
+
+    // Convenience: Get the inverse of the sel bits
+    Not(in = sel[0], out = notsel0);
+    Not(in = sel[1], out = notsel1);
+
+    // Determine which output pin will return in
+    And(a = notsel1, b = notsel0, out = sela);
+    And(a = notsel1, b = sel[0], out = selb);
+    And(a = sel[1], b = notsel0, out = selc);
+    And(a = sel[1], b = sel[0], out = seld);
+
+    // Send in to the appropriate output pin
+    And(a = in, b = sela, out = a);
+    And(a = in, b = selb, out = b);
+    And(a = in, b = selc, out = c);
+    And(a = in, b = seld, out = d);
 }
