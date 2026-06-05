@@ -14,24 +14,21 @@ CHIP DMux4Way {
 
     PARTS:
 
-    // a = in AND (Not(sel[1]) AND Not(sel[0]))
-    // b = in AND (Not(sel[1]) AND sel[0])
-    // c = in AND (sel[1] AND Not(sel[0]))
-    // d = in AND (sel[1] AND sel[0])
-
-    // Convenience: Get the inverse of the sel bits
-    Not(in = sel[0], out = notsel0);
+    // Convenience: Get the inverse of the most-significant sel bit
     Not(in = sel[1], out = notsel1);
 
-    // Determine which output pin will return in
-    And(a = notsel1, b = notsel0, out = sela);
-    And(a = notsel1, b = sel[0], out = selb);
-    And(a = sel[1], b = notsel0, out = selc);
-    And(a = sel[1], b = sel[0], out = seld);
+    // (1) Use sel's least-significant bit + DMux to return appropriate value
+    //      from a/b and c/d pairs
+    // (2) Use a bit-wise AND with the most significant sel bit (or negation) to determine
+    //      which of the values returned in (1) to use
 
-    // Send in to the appropriate output pin
-    And(a = in, b = sela, out = a);
-    And(a = in, b = selb, out = b);
-    And(a = in, b = selc, out = c);
-    And(a = in, b = seld, out = d);
+    // (1)
+    DMux(in = in, sel = sel[0], a = da, b = db);
+    DMux(in = in, sel = sel[0], a = dc, b = dd);
+
+    // (2)
+    And(a = da, b = notsel1, out = a);
+    And(a = db, b = notsel1, out = b);
+    And(a = dc, b = sel[1], out = c);
+    And(a = dd, b = sel[1], out = d);
 }
