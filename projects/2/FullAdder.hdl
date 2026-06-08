@@ -10,5 +10,13 @@ CHIP FullAdder {
         carry;   // Left bit of a + b + c
 
     PARTS:
-    //// Replace this comment with your code.
+
+    // Add a + b to get a temp sum (aPlusb) and carry (aPlusbCarry)
+    HalfAdder(a = a, b = b, sum = aPlusb, carry = aPlusbCarry);
+
+    // Then add c to aPlusbCarry: the sum is the sum of the FullAdder
+    HalfAdder(a = aPlusb, b = c, sum = sum, carry = aPlusbPluscCarry);
+
+    // The carry is the sum of the two carries (aPlusbCarry + aPlusbPluscCarry)
+    HalfAdder(a = aPlusbCarry, b = aPlusbPluscCarry, sum = carry, carry = whatevs);
 }
