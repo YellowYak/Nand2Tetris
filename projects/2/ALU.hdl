@@ -26,19 +26,62 @@
 // if (no == 1) sets out = !out   // bitwise not
 
 CHIP ALU {
-    IN  
-        x[16], y[16],  // 16-bit inputs        
+    IN
+        x[16], y[16],  // 16-bit inputs
         zx, // zero the x input?
         nx, // negate the x input?
         zy, // zero the y input?
         ny, // negate the y input?
         f,  // compute (out = x + y) or (out = x & y)?
         no; // negate the out output?
-    OUT 
+    OUT
         out[16], // 16-bit output
         zr,      // if (out == 0) equals 1, else 0
         ng;      // if (out < 0)  equals 1, else 0
 
     PARTS:
-    //// Replace this comment with your code.
+
+    // NOTE: We can use a Mux to do basic "if x then y else z"-type logic
+
+    // Implement zx & zy
+    Mux16(a = x, b = false, sel = zx, out = x1);
+    Mux16(a = y, b = false, sel = zy, out = y1);
+
+    // Implement nx & ny
+    Not16(in = x1, out = nx1);
+    Mux16(a = x1, b = nx1, sel = nx, out = x2);
+
+    Not16(in = y1, out = ny1);
+    Mux16(a = y1, b = ny1, sel = ny, out = y2);
+
+    // Implement f: compute both x + y and x & y then use a Mux to select which one to return
+    Add16(a = x2, b = y2, out = x2Plusy2);
+    And16(a = x2, b = y2, out = x2Andy2);
+    Mux16(a = x2Andy2, b = x2Plusy2, sel = f, out = out1);
+
+    // Implement no
+
+    // When computing out, also:
+    //  1. Set outMsb to out's most-significant bit (to determine ng)
+    //  2. Set outLoByte to the lower 8 bits in out, and outHiByte to the higher 8 bits
+    //      (These will be used with Or8Way to determine if all bits are 0 in out for zr)
+    Not16(in = out1, out = nout1);
+    Mux16(
+        a = out1,
+        b = nout1,
+        sel = no,
+        out[0..7] = outLoByte,
+        out[8..15] = outHiByte,
+        out[15] = outMsb,
+        out = out
+    );
+
+    // Determine if out is all 0s and report zr
+    Or8Way(in = outLoByte, out = outLoByteHas1);
+    Or8Way(in = outHiByte, out = outHiByteHas1);
+    Or(a = outLoByteHas1, b = outHiByteHas1, out = outHas1);
+    Mux(a = true, b = false, sel = outHas1, out = zr);
+
+    // Report ng
+    Mux(a = false, b = true, sel = outMsb, out = ng);
 }
