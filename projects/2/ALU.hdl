@@ -72,7 +72,7 @@ CHIP ALU {
         sel = no,
         out[0..7] = outLoByte,
         out[8..15] = outHiByte,
-        out[15] = outMsb,
+        out[15] = ng,
         out = out
     );
 
@@ -80,8 +80,5 @@ CHIP ALU {
     Or8Way(in = outLoByte, out = outLoByteHas1);
     Or8Way(in = outHiByte, out = outHiByteHas1);
     Or(a = outLoByteHas1, b = outHiByteHas1, out = outHas1);
-    Mux(a = true, b = false, sel = outHas1, out = zr);
-
-    // Report ng
-    Mux(a = false, b = true, sel = outMsb, out = ng);
+    Not(in = outHas1, out = zr);
 }
