@@ -12,5 +12,85 @@ CHIP Register {
     OUT out[16];
 
     PARTS:
-    //// Replace this comment with your code.
+
+    // Determine which value to store in the DFF:
+    //  * The previous value (load == 1)
+    //  * The in value (load == 0)
+    Mux16(
+        a[0] = outDiff0,
+        a[1] = outDiff1,
+        a[2] = outDiff2,
+        a[3] = outDiff3,
+        a[4] = outDiff4,
+        a[5] = outDiff5,
+        a[6] = outDiff6,
+        a[7] = outDiff7,
+        a[8] = outDiff8,
+        a[9] = outDiff9,
+        a[10] = outDiff10,
+        a[11] = outDiff11,
+        a[12] = outDiff12,
+        a[13] = outDiff13,
+        a[14] = outDiff14,
+        a[15] = outDiff15,
+        b = in,
+        sel = load,
+        out[0] = mo0,
+        out[1] = mo1,
+        out[2] = mo2,
+        out[3] = mo3,
+        out[4] = mo4,
+        out[5] = mo5,
+        out[6] = mo6,
+        out[7] = mo7,
+        out[8] = mo8,
+        out[9] = mo9,
+        out[10] = mo10,
+        out[11] = mo11,
+        out[12] = mo12,
+        out[13] = mo13,
+        out[14] = mo14,
+        out[15] = mo15,
+        out = mo
+    );
+
+    // Store the appropriate value in the DFF
+    DFF(in = mo0, out = outDiff0);
+    DFF(in = mo1, out = outDiff1);
+    DFF(in = mo2, out = outDiff2);
+    DFF(in = mo3, out = outDiff3);
+    DFF(in = mo4, out = outDiff4);
+    DFF(in = mo5, out = outDiff5);
+    DFF(in = mo6, out = outDiff6);
+    DFF(in = mo7, out = outDiff7);
+    DFF(in = mo8, out = outDiff8);
+    DFF(in = mo9, out = outDiff9);
+    DFF(in = mo10, out = outDiff10);
+    DFF(in = mo11, out = outDiff11);
+    DFF(in = mo12, out = outDiff12);
+    DFF(in = mo13, out = outDiff13);
+    DFF(in = mo14, out = outDiff14);
+    DFF(in = mo15, out = outDiff15);
+
+    // "Assign" the output to the out pin
+    And16(
+        a[0]=outDiff0,
+        a[1]=outDiff1,
+        a[2]=outDiff2,
+        a[3]=outDiff3,
+        a[4]=outDiff4,
+        a[5]=outDiff5,
+        a[6]=outDiff6,
+        a[7]=outDiff7,
+        a[8]=outDiff8,
+        a[9]=outDiff9,
+        a[10]=outDiff10,
+        a[11]=outDiff11,
+        a[12]=outDiff12,
+        a[13]=outDiff13,
+        a[14]=outDiff14,
+        a[15]=outDiff15,
+        b=true,
+        out=out
+    );
 }

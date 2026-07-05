@@ -12,5 +12,15 @@ CHIP Bit {
     OUT out;
 
     PARTS:
-    //// Replace this comment with your code.
+
+    // Determine which value to store in the DFF:
+    //  * The previous value (load == 1)
+    //  * The in value (load == 0)
+    Mux(a = outDiff, b = in, sel = load, out = mo);
+
+    // Store the appropriate value in the DFF
+    DFF(in = mo, out = outDiff);
+
+    // "Assign" the output to the out pin
+    And(a=outDiff , b=true, out=out);
 }
