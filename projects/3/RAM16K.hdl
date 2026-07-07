@@ -12,5 +12,58 @@ CHIP RAM16K {
     OUT out[16];
 
     PARTS:
-    //// Replace this comment with your code.
+
+    // The RAM16K chip uses four RAM4K chips.
+    // The passed-in address's two most-significant bits determine which RAM4K chip to use.
+    //  The 12 least-significant bits determine which RAM512 in the RAM4K chip to use.
+
+    // Determine which RAM4K chip to use based on the two most-significant bits of the address
+    DMux4Way(
+        in = load,
+        sel = address[12..13],
+        a = ram0,
+        b = ram1,
+        c = ram2,
+        d = ram3
+    );
+
+    // For each of the chip's four RAM4K chips, pass in the 12 least-significant bits of the address
+    //  to specify which RAM4K to write to. Record each RAM4K chip's output.
+    RAM4K(
+        in = in,
+        load = ram0,
+        address = address[0..11],
+        out = rout0
+    );
+
+    RAM4K(
+        in = in,
+        load = ram1,
+        address = address[0..11],
+        out = rout1
+    );
+
+    RAM4K(
+        in = in,
+        load = ram2,
+        address = address[0..11],
+        out = rout2
+    );
+
+    RAM4K(
+        in = in,
+        load = ram3,
+        address = address[0..11],
+        out = rout3
+    );
+
+    // Finally, determine which RAM4K chip's output to return based on the two most-significant bits of address.
+    Mux4Way16(
+        a = rout0,
+        b = rout1,
+        c = rout2,
+        d = rout3,
+        sel = address[12..13],
+        out = out
+    );
 }

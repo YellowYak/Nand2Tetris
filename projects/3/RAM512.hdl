@@ -12,5 +12,94 @@ CHIP RAM512 {
     OUT out[16];
 
     PARTS:
-    //// Replace this comment with your code.
+
+    // The RAM512 chip uses eight RAM64 chips.
+    // The passed-in address's three most-significant bits determine which RAM64 chip to use.
+    //  The six least-significant bits determine which RAM8 in the RAM64 chip to use.
+
+    // Determine which RAM64 chip to use based on the three most-significant bits of the address
+    DMux8Way(
+        in = load,
+        sel = address[6..8],
+        a = ram0,
+        b = ram1,
+        c = ram2,
+        d = ram3,
+        e = ram4,
+        f = ram5,
+        g = ram6,
+        h = ram7
+    );
+
+    // For each of the chip's eight RAM64 chips, pass in the six least-significant bits of the address
+    //  to specify which RAM8 to write to. Record each RAM64 chip's output.
+    RAM64(
+        in = in,
+        load = ram0,
+        address = address[0..5],
+        out = rout0
+    );
+
+    RAM64(
+        in = in,
+        load = ram1,
+        address = address[0..5],
+        out = rout1
+    );
+
+    RAM64(
+        in = in,
+        load = ram2,
+        address = address[0..5],
+        out = rout2
+    );
+
+    RAM64(
+        in = in,
+        load = ram3,
+        address = address[0..5],
+        out = rout3
+    );
+
+    RAM64(
+        in = in,
+        load = ram4,
+        address = address[0..5],
+        out = rout4
+    );
+
+    RAM64(
+        in = in,
+        load = ram5,
+        address = address[0..5],
+        out = rout5
+    );
+
+    RAM64(
+        in = in,
+        load = ram6,
+        address = address[0..5],
+        out = rout6
+    );
+
+    RAM64(
+        in = in,
+        load = ram7,
+        address = address[0..5],
+        out = rout7
+    );
+
+    // Finally, determine which RAM64 chip's output to return based on the three most-significant bits of address.
+    Mux8Way16(
+        a = rout0,
+        b = rout1,
+        c = rout2,
+        d = rout3,
+        e = rout4,
+        f = rout5,
+        g = rout6,
+        h = rout7,
+        sel = address[6..8],
+        out = out
+    );
 }
