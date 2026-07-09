@@ -11,7 +11,48 @@
 CHIP PC {
     IN in[16],inc, load, reset;
     OUT out[16];
-    
+
     PARTS:
-    //// Replace this comment with your code.
+
+    // The register output is stored in a variable named regOut
+
+    // If inc(t) then increment the PC
+    Inc16(in = regOut, out = incVal);
+    Mux16(
+        a = regOut,
+        b = incVal,
+        sel = inc,
+        out = valAfterInc
+    );
+
+    // If load(t) then update the PC to in
+    Mux16(
+        a = valAfterInc,
+        b = in,
+        sel = load,
+        out = valAfterLoad
+    );
+
+    // If reset(t) then set the PC to 0
+    Mux16(
+        a = valAfterLoad,
+        b = false,
+        sel = reset,
+        out = valAfterReset
+    );
+
+
+    // We need to update the register if any of the control bits are set
+    Or(a = reset, b = load, out = rl);
+    Or(a = rl, b = inc, out = rli);
+
+    // Read/write from the Register, storing the value in regOut
+    Register(
+        in = valAfterReset,
+        load = rli,
+        out = regOut
+    );
+
+    // Write regOut to the out pi
+    And16(a = regOut, b = true, out = out);
 }
