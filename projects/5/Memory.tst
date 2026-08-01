@@ -2,11 +2,11 @@
 // and the book "The Elements of Computing Systems"
 // by Nisan and Schocken, MIT Press.
 
-// Tests the Memory chip by inputting values to selected addresses, 
-// verifying that these addresses were indeed written to, and verifying  
-// that other addresses were not accessed by mistake. In particular, we 
+// Tests the Memory chip by inputting values to selected addresses,
+// verifying that these addresses were indeed written to, and verifying
+// that other addresses were not accessed by mistake. In particular, we
 // focus on probing the registers in addresses 'lower RAM', 'upper RAM',
-// and 'Screen', which correspond to 0, %X2000, and %X4000 in Hexadecimal 
+// and 'Screen', which correspond to 0, %X2000, and %X4000 in Hexadecimal
 // (0, 8192 (8K), and 16385 (16K+1) in decimal).
 
 load Memory.hdl,
@@ -100,7 +100,7 @@ tock,
 output;
 
 set load 0,
-set address %X2234,		// Did not also write to upper RAM or Screen 
+set address %X2234,		// Did not also write to upper RAM or Screen
 eval, output;
 set address %X6234,
 eval, output;
@@ -114,7 +114,7 @@ tock,
 output;
 
 set load 0,
-set address %X0345,		// Did not also write to lower RAM or Screen 
+set address %X0345,		// Did not also write to lower RAM or Screen
 eval, output;
 set address %X4345,
 eval, output;
@@ -130,7 +130,7 @@ echo "Click the Keyboard icon and hold down the 'K' key (uppercase) until you se
 // the memory will zero itself before being outputted.
 
 while out <> 75 {
-    tick, tock,     // tick, tock prevents hang if sync. parts used in KB path.
+    tick, tock;     // tick, tock prevents hang if sync. parts used in KB path.
 }
 
 clear-echo,
@@ -183,7 +183,7 @@ echo "Two horizontal lines should be in the middle of the screen. Hold down 'Y' 
 // the memory will zero itself before being outputted.
 
 while out <> 89 {
-    tick, tock,     // tick, tock prevents hang if sync. parts used in KB path.
+    tick, tock;     // tick, tock prevents hang if sync. parts used in KB path.
 }
 
 clear-echo,
