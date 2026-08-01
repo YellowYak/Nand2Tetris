@@ -3,19 +3,19 @@
 // by Nisan and Schocken, MIT Press.
 /**
  * The complete address space of the Hack computer's memory,
- * including RAM and memory-mapped I/O. 
+ * including RAM and memory-mapped I/O.
  * The chip facilitates read and write operations, as follows:
  *     Read:  out(t) = Memory[address(t)](t)
  *     Write: if load(t-1) then Memory[address(t-1)](t) = in(t-1)
- * In words: the chip always outputs the value stored at the memory 
- * location specified by address. If load=1, the in value is loaded 
- * into the memory location specified by address. This value becomes 
+ * In words: the chip always outputs the value stored at the memory
+ * location specified by address. If load=1, the in value is loaded
+ * into the memory location specified by address. This value becomes
  * available through the out output from the next time step onward.
  * Address space rules:
- * Only the upper 16K+8K+1 words of the Memory chip are used. 
- * Access to address>0x6000 is invalid. Access to any address in 
- * the range 0x4000-0x5FFF results in accessing the screen memory 
- * map. Access to address 0x6000 results in accessing the keyboard 
+ * Only the upper 16K+8K+1 words of the Memory chip are used.
+ * Access to address>0x6000 is invalid. Access to any address in
+ * the range 0x4000-0x5FFF results in accessing the screen memory
+ * map. Access to address 0x6000 results in accessing the keyboard
  * memory map. The behavior in these addresses is described in the Screen
  * and Keyboard chip specifications given in the lectures and the book.
  */
@@ -24,5 +24,59 @@ CHIP Memory {
     OUT out[16];
 
     PARTS:
-	//// Replace this comment with your code.
+
+    // The Memory module is constructed using three chips:
+    //  (1) RAM16K chip to store the data memory
+    //  (2) Screen chip to handle screen memory mapping
+    //  (3) Keyboard to handle keyboard memory mapping
+
+    // The screen address, 0x4000, is 100000000000000 in binary
+    // The keyboard address, 0x6000, is 110000000000000 in binary
+
+    // Determine which chip to use based on the two most-significant bits of the address
+    DMux4Way(
+        in = load,
+        sel = address[13..14],
+        a = loadData0,              // 00 accesses data memory
+        b = loadData1,              // 01 accesses data memory
+        c = loadScreen,             // 10 accesses the screen
+        d = loadKeyboard            // 11 accesses the keyboard
+    );
+
+    // Always read from the keyboard
+    Keyboard(out = outKeyboard);
+
+    // Write to the screen if needed
+    Screen(
+        in = in,
+        load = loadScreen,
+        address=address[0..12],
+        out = outScreen
+    );
+
+    // If either loadData0 or loadData1 is set, then write to data memory
+    Or(
+        a = loadData0,
+        b = loadData1,
+        out = loadData
+    );
+
+    // For each of the chip's two RAM16K chips, pass in the 14 least-significant bits of the address
+    //  to specify which RAM16K to write to. Record each RAM16K chip's output.
+    RAM16K(
+        in = in,
+        load = loadData,
+        address = address[0..13],
+        out = outData
+    );
+
+    // Finally, determine which memory output to return based on the two most-significant bits of address.
+    Mux4Way16(
+        a = outData,                // 00 returns data memory
+        b = outData,                // 01 returns data memory
+        c = outScreen,              // 10 returns screen memory
+        d = outKeyboard,            // 11 returns keyboard memory
+        sel = address[13..14],
+        out = out
+    );
 }
