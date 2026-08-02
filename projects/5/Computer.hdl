@@ -4,18 +4,46 @@
 /**
  * The Hack computer, consisting of CPU, ROM and RAM.
  * When reset = 0, the program stored in the ROM executes.
- * When reset = 1, the program's execution restarts. 
+ * When reset = 1, the program's execution restarts.
  * Thus, to start running the currently loaded program,
- * set reset to 1, and then set it to 0. 
+ * set reset to 1, and then set it to 0.
  * From this point onwards, the user is at the mercy of the software.
  * Depending on the program's code, and whether the code is correct,
  * the screen may show some output, the user may be expected to enter
- * some input using the keyboard, or the program may do some procerssing. 
+ * some input using the keyboard, or the program may do some procerssing.
  */
 CHIP Computer {
 
     IN reset;
 
     PARTS:
-    //// Replace this comment with your code.
+
+    // Instruction memory (ROM)
+    //  Address to read comes from the CPU's pc output pin
+    //  Output gets wired to the CPU's instruction input pin
+    ROM32K(
+        address = outPc,
+        out = instruction
+    );
+
+
+    // CPU
+    CPU(
+        inM = outM,
+        instruction = instruction,
+        reset = reset,
+        outM = outCpu,
+        writeM = writeM,
+        addressM = addressM,
+        pc = outPc
+    );
+
+
+    // Data Memory with Screen/Keyboard memory maps
+    Memory(
+        in = outCpu,
+        load = writeM,
+        address = addressM,
+        out = outM
+    );
 }
