@@ -26,10 +26,200 @@ CHIP CPU {
                          // the current program (reset==0).
 
     OUT outM[16],        // M value output
-        writeM,          // Write to M? 
+        writeM,          // Write to M?
         addressM[15],    // Address in data memory (of M)
         pc[15];          // address of next instruction
 
     PARTS:
-	//// Replace this comment with your code.
+
+    // Determine what type of instruction we are executing.
+    // A instructions have 1 for the most-significant bit
+    //  A instruction: 0vvv vvvv vvvv vvvv
+    //  C instruction: 111a c1c2c3c4 c5c6d1d2 d3j1j2j3
+    Mux(a = true, b = false, sel = instruction[15], out = aInstruction);
+    Not(in = aInstruction, out = cInstruction);
+
+
+    /******* FOR C INSTRUCTIONS ********/
+    // Determine the destination (if any) by inspecting the d1d2d3 bits
+    //  d3=1 --> save to M
+    //  d2=1 --> save to D
+    //  d1=1 --> save to A
+    And(a = cInstruction, b = instruction[3], out = cInstructionDestM);
+    And(a = cInstruction, b = instruction[4], out = cInstructionDestD);
+    And(a = cInstruction, b = instruction[5], out = cInstructionDestA);
+
+    // Determine jump logic by inspecting j1j2j3 bits
+    //  (See Figure 4.5 in textbook on pg. 69 for details...)
+    DMux8Way(
+        in = cInstruction,
+        sel = instruction[0..2],
+        a = noJump,
+        b = jgt,
+        c = jeq,
+        d = jge,
+        e = jlt,
+        f = jne,
+        g = jle,
+        h = jmp
+    );
+    /***********************************/
+
+
+    /******* A REGISTER ********/
+    // Save to A register if we have an A instruction -or- a C instruction that saves to A
+    Or(a = aInstruction, b = cInstructionDestA, out = loadA);
+
+    // If it's an A instruction then save the value of the instruction
+    // But if it's a C instruction then save the ALU output (outALU)
+    Mux16(
+        a = instruction,
+        b = outALU,
+        sel = cInstruction,
+        out = inA
+    );
+
+    // A register
+    ARegister(
+        in = inA,
+        load = loadA,
+        out = outA
+    );
+    /***************************/
+
+
+    /******* D REGISTER & ALU X VALUE ********/
+    // Save the ALU  output (outM) to the D register if instructed via cInstructionDestD
+    // The D register's output (outD) is the X value to send into the ALU
+    DRegister(
+        in = outALU,
+        load = cInstructionDestD,
+        out = outD
+    );
+    /*****************************************/
+
+
+    /******* ALU Y VALUE ********/
+    // If this is an A instruction then use outA for the Y value
+    // Otherwise, if this is a C instruction, then use the M value if the 12th instruction bit (a) is 1
+    And(a = cInstruction, b = instruction[12], out = useM);
+    Mux16(
+        a = outA,
+        b = inM,
+        sel = useM,
+        out = y
+    );
+    /****************************/
+
+
+    /******* ALU COMPUTATION AND JUMP DETERMINATION *******/
+    // Plugs in the D register output (X) and the computed Y value into the ALU
+    //  along with the control bits (c1c2c3c4c5c6).
+    And(a = instruction[11], b = true, out = c1);
+    And(a = instruction[10], b = true, out = c2);
+    And(a = instruction[9], b = true, out = c3);
+    And(a = instruction[8], b = true, out = c4);
+    And(a = instruction[7], b = true, out = c5);
+    And(a = instruction[6], b = true, out = c6);
+    ALU(
+        x = outD,
+        y = y,
+        zx = c1,
+        nx = c2,
+        zy = c3,
+        ny = c4,
+        f = c5,
+        no = c6,
+        out = outALU,
+        zr = outIsZero,
+        ng = outIsNegative
+    );
+
+    // Set the 15 addressM output pins to the first 15 pins of the A register
+    //  We use an And16 here to be able to selectively return just those first 15 pin values...
+    And16(
+        a = outA,
+        b = true,
+        out[0] = addressM[0],
+        out[1] = addressM[1],
+        out[2] = addressM[2],
+        out[3] = addressM[3],
+        out[4] = addressM[4],
+        out[5] = addressM[5],
+        out[6] = addressM[6],
+        out[7] = addressM[7],
+        out[8] = addressM[8],
+        out[9] = addressM[9],
+        out[10] = addressM[10],
+        out[11] = addressM[11],
+        out[12] = addressM[12],
+        out[13] = addressM[13],
+        out[14] = addressM[14]
+    );
+
+    // Send outALU to the outM output pin
+    And16(a = true, b = outALU, out = outM);
+
+    // If writing to M (cInstructionDestM) then set writeM to 1
+    And(a = true, b = cInstructionDestM, out = writeM);
+
+    // Determine whether to increment the PC or jump to outM based on j1j2j3
+    // First, use zr and ng ALU outputs (outIsZero and outIsNegative, respectively)
+    //  to determine all conditionals: <0, <=0, =0, >0, >=0
+    Not(in = outIsZero, out = outIsNotZero);
+    Not(in = outIsNegative, out = outIsNonNegative);
+    And(a = outIsNotZero, b = outIsNonNegative, out = outIsPositive);
+    Or(a = outIsZero, b = outIsNegative, out = outIsLessThanOrEqualToZero);
+    Or(a = outIsZero, b = outIsPositive, out = outIsGreaterThanOrEqualToZero);
+
+    // Now determine which jump conditions apply, if any
+    And(a = jgt, b = outIsPositive, out = jgtApplies);
+    And(a = jeq, b = outIsZero, out = jeqApplies);
+    And(a = jge, b = outIsGreaterThanOrEqualToZero, out = jgeApplies);
+    And(a = jlt, b = outIsNegative, out = jltApplies);
+    And(a = jne, b = outIsNotZero, out = jneApplies);
+    And(a = jle, b = outIsLessThanOrEqualToZero, out = jleApplies);
+    And(a = jmp, b = true, out = jmpApplies);
+
+    // Finally, determine if we are a jumping or just incrementing
+    Or8Way(
+        in[0] = false,
+        in[1] = jgtApplies,
+        in[2] = jeqApplies,
+        in[3] = jgeApplies,
+        in[4] = jltApplies,
+        in[5] = jneApplies,
+        in[6] = jleApplies,
+        in[7] = jmpApplies,
+        out = doJump
+    );
+    Not(in = doJump, out = incPC);
+    /*****************************************************/
+
+
+    /******* PC REGISTER ********/
+    // Update the PC, either incrementing it, resetting it, or assigning it the current address
+    // Also assign the pc output pin to the new value
+    PC(
+        in = outA,
+        inc = incPC,
+        load = doJump,
+        reset = reset,
+        out[0] = pc[0],
+        out[1] = pc[1],
+        out[2] = pc[2],
+        out[3] = pc[3],
+        out[4] = pc[4],
+        out[5] = pc[5],
+        out[6] = pc[6],
+        out[7] = pc[7],
+        out[8] = pc[8],
+        out[9] = pc[9],
+        out[10] = pc[10],
+        out[11] = pc[11],
+        out[12] = pc[12],
+        out[13] = pc[13],
+        out[14] = pc[14]
+    );
+    /****************************/
 }
